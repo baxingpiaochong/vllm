@@ -4,6 +4,8 @@
 from concurrent.futures import Future
 from typing import Optional, Union
 
+from vllm.distributed.kv_transfer import (get_kv_transfer_group,
+                                          has_kv_transfer_group)
 from vllm.distributed.kv_transfer.kv_connector.utils import KVOutputAggregator
 from vllm.executor.ray_distributed_executor import (  # noqa
     RayDistributedExecutor as RayDistributedExecutorV0)
@@ -50,8 +52,16 @@ class RayDistributedExecutor(RayDistributedExecutorV0, Executor):
 
         # KV connector setup
         self.has_connector = self.vllm_config.kv_transfer_config is not None
-        self.kv_output_aggregator = KVOutputAggregator(
-            self.parallel_config.world_size)
+        if has_kv_transfer_group():
+            kv_connector = get_kv_transfer_group()
+            finish_recv_count, finish_send_count = kv_connector.get_finished_count()
+            self.kv_output_aggregator = KVOutputAggregator(
+                finish_recv_count or self.parallel_config.world_size,
+                finish_send_count or self.parallel_config.world_size)
+        else:
+            self.kv_output_aggregator = KVOutputAggregator(
+                self.parallel_config.world_size,
+                self.parallel_config.world_size)
 
     @property
     def max_concurrent_batches(self) -> int:

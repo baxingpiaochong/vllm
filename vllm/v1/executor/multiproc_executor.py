@@ -128,10 +128,14 @@ class MultiprocExecutor(Executor):
         self.has_connector = self.vllm_config.kv_transfer_config is not None
         if has_kv_transfer_group():
             kv_connector = get_kv_transfer_group()
-        finish_recv_count, finish_send_count = kv_connector.get_finished_count()
-        self.kv_output_aggregator = KVOutputAggregator(
-            finish_recv_count or self.parallel_config.world_size,
-            finish_send_count or self.parallel_config.world_size)
+            finish_recv_count, finish_send_count = kv_connector.get_finished_count()
+            self.kv_output_aggregator = KVOutputAggregator(
+                finish_recv_count or self.parallel_config.world_size,
+                finish_send_count or self.parallel_config.world_size)
+        else:
+            self.kv_output_aggregator = KVOutputAggregator(
+                self.parallel_config.world_size,
+                self.parallel_config.world_size)
 
     def start_worker_monitor(self):
         workers = self.workers
