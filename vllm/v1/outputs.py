@@ -76,6 +76,8 @@ class KVConnectorOutput:
     # [req_ids]
     finished_sending: Optional[set[str]] = None
     finished_recving: Optional[set[str]] = None
+    sending_count: Optional[int] = None
+    recving_count: Optional[int] = None
 
 
 # ModelRunnerOutput is serialized and sent to the scheduler process.

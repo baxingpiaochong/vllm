@@ -221,6 +221,20 @@ class KVConnectorBase_V1(ABC):
             call to this method (this call or a prior one).
         """
         return None, None
+    
+    def get_finished_count(self) -> tuple[Optional[int], Optional[int]]:
+        """
+        Different Attention nodes require different numbers of 
+        transmissions. For example, in MLA, all heads share a common 
+        key value, and the prefill node only needs to transmit once.
+        If P TP > D TP, the number of ranks pulled from KV caches by D 
+        is less than P TP.
+
+        Returns:
+            The number of ranks that the prefill node needs to send
+            and the number of ranks that the decode node needs to accept
+        """
+        return None, None
 
     # ==============================
     # Scheduler-side methods

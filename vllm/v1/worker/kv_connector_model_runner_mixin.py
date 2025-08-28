@@ -111,5 +111,7 @@ class KVConnectorModelRunnerMixin:
 
             output.finished_sending, output.finished_recving = (
                 kv_connector.get_finished(scheduler_output.finished_req_ids))
+            output.sending_count, output.recving_count = (
+                kv_connector.get_finished_count())
 
             kv_connector.clear_connector_metadata()

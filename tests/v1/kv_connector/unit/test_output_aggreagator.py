@@ -11,21 +11,41 @@ class DummyModelRunnerOutput(ModelRunnerOutput):
 
     def __init__(self,
                  finished_sending: Optional[set[str]] = None,
-                 finished_recving: Optional[set[str]] = None):
+                 finished_recving: Optional[set[str]] = None,
+                 sending_count: Optional[int] = None,
+                 recving_count: Optional[int] = None):
         self.kv_connector_output = KVConnectorOutput(
             finished_sending=finished_sending,
             finished_recving=finished_recving,
+            sending_count=sending_count,
+            recving_count=recving_count
         )
 
     def __repr__(self):
         return (
             f"DummyModelRunnerOutput("
             f"finished_sending={self.kv_connector_output.finished_sending},"
-            f"finished_recving={self.kv_connector_output.finished_recving})")
+            f"finished_recving={self.kv_connector_output.finished_recving})"
+            f"sending_count={self.kv_connector_output.sending_count})"
+            f"recving_count={self.kv_connector_output.recving_count})")
 
 
 def test_aggregate_workers_output():
     aggregator = KVOutputAggregator(world_size=2)
+
+    output1 = DummyModelRunnerOutput(finished_sending=None,
+                                     finished_recving=None)
+    output2 = DummyModelRunnerOutput(finished_sending={'req1'},
+                                     finished_recving={'req2'},
+                                     sending_count=1,
+                                     recving_count=1)
+    
+    aggregated = aggregator.aggregate([output1, output2])
+
+    assert aggregated is output1
+    aggregated = aggregated.kv_connector_output
+    assert aggregated.finished_sending == {'req1'}
+    assert aggregated.finished_recving == {'req2'}
 
     output1 = DummyModelRunnerOutput(finished_sending={'req1'},
                                      finished_recving={'req2'})

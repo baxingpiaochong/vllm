@@ -132,9 +132,15 @@ class KVOutputAggregator:
         # aggregate kv_connector_output from all workers
 
         def update_finished_set(req_ids: Optional[set[str]],
+                                count: Optional[int],
                                 remaining_count_dict: dict[str, int],
                                 finished_set: set[str]) -> None:
-            for req_id in req_ids or ():
+            for req_id in req_ids:
+                if req_id not in remaining_count_dict:
+                    remaining_count_dict[req_id] = (
+                        count if count is not None 
+                        else remaining_count_dict.default_factory())
+                    
                 remaining_count_dict[req_id] -= 1
                 if remaining_count_dict[req_id] == 0:
                     finished_set.add(req_id)
@@ -146,9 +152,9 @@ class KVOutputAggregator:
             output = output.kv_connector_output
             if not output:
                 continue
-            update_finished_set(output.finished_sending,
+            update_finished_set(output.finished_sending, output.sending_count,
                                 self._send_remaining_count, finished_sending)
-            update_finished_set(output.finished_recving,
+            update_finished_set(output.finished_recving, output.recving_count,
                                 self._recv_remaining_count, finished_recving)
 
         # select output of the worker specified by output_rank
