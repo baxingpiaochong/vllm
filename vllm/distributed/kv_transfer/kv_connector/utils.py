@@ -120,11 +120,11 @@ class KVOutputAggregator:
     """Utility class to aggregate the output of all workers into a single 
     output corresponding to Rank 0 for scheduler."""
 
-    def __init__(self, world_size: int):
+    def __init__(self, finish_recving_count: int, finish_sending_count: int):
         # Complete transfer tracker. Used to track finished requests
         # [req_id -> n_remaining_workers]
-        self._recv_remaining_count = defaultdict[str, int](lambda: world_size)
-        self._send_remaining_count = defaultdict[str, int](lambda: world_size)
+        self._recv_remaining_count = defaultdict[str, int](lambda: finish_recving_count)
+        self._send_remaining_count = defaultdict[str, int](lambda: finish_sending_count)
 
     def aggregate(self,
                   outputs: list[ModelRunnerOutput],

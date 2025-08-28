@@ -25,7 +25,7 @@ class DummyModelRunnerOutput(ModelRunnerOutput):
 
 
 def test_aggregate_workers_output():
-    aggregator = KVOutputAggregator(world_size=2)
+    aggregator = KVOutputAggregator(finish_recving_count=2, finish_sending_count=2)
 
     output1 = DummyModelRunnerOutput(finished_sending={'req1'},
                                      finished_recving={'req2'})
@@ -65,7 +65,7 @@ def test_aggregate_workers_output():
 
 
 def test_async_aggregate_workers_output():
-    aggregator = KVOutputAggregator(world_size=2)
+    aggregator = KVOutputAggregator(finish_recving_count=2, finish_sending_count=2)
 
     future1: Future[DummyModelRunnerOutput] = Future()
     future2: Future[DummyModelRunnerOutput] = Future()
