@@ -391,6 +391,15 @@ class PrometheusStatLogger(AggregateStatLoggerBase):
             vllm_config, labelnames, per_engine_labelvalues
         )
 
+        # judge whether is PD seperate
+        self.PD_seperate = False
+        try:
+            if self.vllm_config.kv_transfer_config:
+                if self.vllm_config.kv_transfer_config.is_kv_consumer:
+                    self.PD_seperate = True
+        except:
+            self.PD_seperate = False
+
         #
         # Scheduler state
         #
@@ -829,6 +838,34 @@ class PrometheusStatLogger(AggregateStatLoggerBase):
             histogram_request_time_per_output_token, engine_indexes, model_name
         )
 
+        histogram_request_avg_tpot_time = self._histogram_cls(
+            name="vllm:request_avg_tpot_time",
+            documentation="Histogram of Average token output time per request",
+            buckets=[
+                0.01,
+                0.025,
+                0.05,
+                0.075,
+                0.1,
+                0.15,
+                0.2,
+                0.3,
+                0.4,
+                0.5,
+                0.75,
+                1.0,
+                2.5,
+                5.0,
+                7.5,
+                10.0,
+                20.0,
+                40.0,
+                80.0
+            ],
+            labelnames=labelnames)
+        self.histogram_request_avg_tpot_time = make_per_engine(
+            histogram_request_avg_tpot_time, engine_indexes, model_name)
+
         request_latency_buckets = [
             0.3,
             0.5,
@@ -1053,6 +1090,21 @@ class PrometheusStatLogger(AggregateStatLoggerBase):
             self.histogram_time_per_output_token[engine_idx].observe(itl)
 
         for finished_request in iteration_stats.finished_requests:
+            if self.PD_seperate:
+                request_avg_tpot_time = (
+                    (finished_request.prefill_time +
+                     finished_request.decode_time) /
+                    finished_request.num_generation_tokens
+                ) if finished_request.num_generation_tokens else 0
+            else:
+                if finished_request.num_generation_tokens > 1:
+                    request_avg_tpot_time = finished_request.decode_time / (
+                        finished_request.num_generation_tokens - 1)
+                else:
+                    request_avg_tpot_time = 0
+                    
+            self.histogram_request_avg_tpot_time[engine_idx].observe(
+                request_avg_tpot_time)
             self.counter_request_success[finished_request.finish_reason][
                 engine_idx
             ].inc()
